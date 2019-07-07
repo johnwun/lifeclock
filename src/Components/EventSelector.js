@@ -1,12 +1,7 @@
 import React, { Component } from "react";
-import { includes } from "lodash";
 import "../App.css";
 
-class Example extends Component {
-  constructor(props) {
-    super(props);
-  }
-
+class EventSelector extends Component {
   render() {
     const { items, selected, handleChange } = this.props;
     return (
@@ -29,4 +24,4 @@ class Example extends Component {
   }
 }
 
-export default Example;
+export default EventSelector;

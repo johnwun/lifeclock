@@ -1,13 +1,9 @@
-import { labeledArc } from "./arcs";
 import "../App.css";
-import { sortBy } from "lodash";
-
-const fullRotation = 2 * Math.PI;
-const textPadding = 5;
+import { keys, size, includes, min, max, get } from "lodash";
+import { renderCategory, todayLine } from "../utils/graphUtils";
 
 const topOffset = 80;
 const canvasSize = 1200;
-
 let clockRadius;
 
 export default function sketch(p) {
@@ -22,10 +18,57 @@ export default function sketch(p) {
 
   p.myCustomRedrawAccordingToNewPropsHandler = function(props) {
     const { cfg } = props;
-    dataStart = new Date(cfg.start);
-    dataEnd = new Date(cfg.end);
-    data = props.data;
     selected = props.selected || [];
+    dataStart = new Date(cfg.start);
+    dataEnd = cfg.end === "now" ? new Date() : new Date(cfg.end);
+    // clone parent object
+    data = { ...props.data };
+    const dataKeys = keys(data).filter(key => includes(selected, key));
+    const dataSize = size(dataKeys.filter(e => !e.offset)) || 1;
+    const avg_letter_spacing = 1;
+    let overflowFlag = false;
+    const startVal = 95;
+    let spacingTracker = startVal;
+
+    /*
+     TODO: for depth order by rank 
+    something like: 
+    sortBy(cat.list, ["rank"]).map(item => {
+    */
+
+    // try to space available categories based on size, and available space
+    for (var count = size(dataKeys) - 1; count >= 0; count--) {
+      const key = dataKeys[count];
+      data[key] = {
+        ...data[key],
+        offset: props.data[key].offset || spacingTracker,
+      };
+
+      // get longest name value of list
+      const longestLabel =
+        max(get(props.data, `${key}.list`, []).map(e => size(e.name))) || 1;
+      const subAmt = longestLabel * avg_letter_spacing;
+      spacingTracker -= subAmt;
+      if (spacingTracker < 0) {
+        overflowFlag = true;
+        break;
+      }
+    }
+    // if that fails, fall back to even distribution
+    // dynamically offset data (now clone keys)
+    if (overflowFlag) {
+      // overflow reached, too many to space properly, so just averaging spacing between all.
+      const defaultOffset = 15;
+      dataKeys.map((key, i) => {
+        const dynamicOffset =
+          (props.data[key].offset || (100 / dataSize) * i) + defaultOffset;
+        data[key] = {
+          ...data[key],
+          offset: props.data[key].offset || min([dynamicOffset, startVal]),
+        };
+        return null;
+      });
+    }
   };
 
   p.draw = function() {
@@ -47,85 +90,16 @@ export default function sketch(p) {
     // render origin line
     p.stroke(0, 0, 0, 40);
     p.line(0, 0, clockRadius, 0);
-    todayLine(p, start, end);
     p.stroke(0);
     p.noFill();
     p.strokeWeight(24);
     p.strokeCap(p.SQUARE);
     p.stroke(225, 185, 195);
 
-    selected.map(visKey => renderCategory(p, data[visKey], start, end));
-    // p.noLoop();
+    selected.map(visKey =>
+      renderCategory(p, data[visKey], start, end, { clockRadius }),
+    );
+    todayLine(p, start, end, { clockRadius });
+    // p.noLoop(); // (can't do this , or will never re-render)
   };
 }
-
-// util functions
-const getPct = (eStart, start, end) =>
-  (new Date(eStart) - new Date(start)) / (end - start);
-
-const renderPoint = (p, e, cat, offset, start, end) => {
-  const timePct = getPct(e.start, start, end);
-  if (timePct > 1 || timePct < 0) return;
-  p.rotate(fullRotation * timePct);
-  if (cat.lineColor !== undefined) {
-    p.stroke(...cat.lineColor, 22);
-    p.strokeWeight(1);
-    p.line(0, 0, clockRadius, 0);
-  }
-
-  p.noStroke();
-  const flipText = timePct > 0.5;
-  p.textAlign(flipText ? p.LEFT : p.RIGHT, p.CENTER);
-  const fillArr = [...cat.color, ((e.rank || 10) / 10) * 255];
-  p.fill(fillArr);
-  p.stroke(255);
-  p.strokeWeight(2);
-  p.push();
-  // move center to dot
-  p.translate(offset, 0);
-  // flip text
-  p.rotate(flipText ? p.PI : 0);
-  p.text(e.name, flipText ? 0 + textPadding : 0 - textPadding, 2);
-  p.pop();
-  p.fill(...cat.color);
-  p.ellipse(offset, 0, 5, 5);
-};
-
-const renderCategory = (p, cat, start, end) => {
-  p.strokeWeight(1);
-  const offset = clockRadius * (cat.offset / 100);
-  p.textSize(cat.fontSize);
-  // TODO: for depth order by rank it's too expensive to do here,
-  // and doesn't change, instead sort on initial import
-  // sortBy(cat.list, ["rank"]).map(item => {
-  cat.list.map(item => {
-    p.push();
-    if (item.end) {
-      const startPct = getPct(item.start, start, end);
-      const endPct = getPct(item.end, start, end);
-      if (startPct > 1 || endPct < 0) return;
-      if (endPct < 0) return;
-      const startArc = fullRotation * (startPct < 0 ? 0 : startPct);
-      const endArc = fullRotation * (endPct > 1 ? 1 : endPct);
-      labeledArc(p, offset, startArc, endArc, item.name);
-    } else {
-      renderPoint(p, item, cat, offset, start, end);
-    }
-    p.pop();
-    return null;
-  });
-};
-const todayLine = (p, start, end) => {
-  p.push();
-  p.stroke(255, 0, 0);
-  const resolution = 200;
-  const startSize = 20;
-  const timePct = getPct(new Date(), start, end);
-  if (timePct > 1 || timePct < 0) return;
-  p.rotate(fullRotation * timePct);
-  for (var c = 0; c < resolution; c++) {
-    p.strokeWeight((startSize / resolution) * c);
-    p.line(0, 0, clockRadius / c, 0);
-  }
-  p.pop();
-};

@@ -1,3 +1,5 @@
+import { colorFromString } from "../utils/utils";
+
 export const labeledArc = (
   p,
   arcRad,
@@ -5,7 +7,7 @@ export const labeledArc = (
   stopDeg,
   label,
   thickness = 16,
-  colorsArr = []
+  colorsArr = [],
 ) => {
   p.textSize(10);
   var number_letters = label.length;
@@ -41,29 +43,3 @@ export const labeledArc = (
 };
 
 // const blackOrWhite = col => ((col[0] + col[1] + col[2]) / 3) > 128 ? 0 : 255
-
-export const colorFromString = str => {
-  const sublen = Math.floor(str.length / 3);
-  const a =
-    (str
-      .substr(0, sublen)
-      .split("")
-      .reduce((t, c) => t + c.charCodeAt(0), 0) *
-      Math.PI) %
-    255;
-  const b =
-    (str
-      .substr(sublen, 2 * sublen)
-      .split("")
-      .reduce((t, c) => t + c.charCodeAt(0), 0) *
-      Math.PI) %
-    255;
-  const c =
-    (str
-      .substr(2 * sublen, 2 * sublen + sublen)
-      .split("")
-      .reduce((t, c) => t + c.charCodeAt(0), 0) *
-      Math.PI) %
-    255;
-  return [a, b, c];
-};
