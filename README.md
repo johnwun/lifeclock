@@ -1,3 +1,44 @@
+A React/p5js based dynamic time-line view of events visualized on the face of an analog clock
+
+![Image of lifeclock](https://i.imgur.com/2nb1oGA.png)
+
+See it run here: [wundes.com/lifeclock](http://wundes.com/lifeclock)
+
+To add your own data, either replace the data.js file, or uncomment the import for personalData, and supliment with your own.
+
+The lifeClock, is just a visualization configurable for any time range, and can contain any amount of categories. sizes can be adjusted per category (curently configurable only in the source data)
+
+Sample data file has the following structure:
+
+```javascript
+export const data = {
+  // optional config object with start and end for entire graph
+  cfg: {
+    offset: -1, // set a category offset to -1 to hide
+    start: "01 Jan 1970",
+    end: "31 Dec 2070",
+  },
+  // The category name is the object key
+  exampleCategoryName: {
+    offset: 99, // optional: fixed offset to position from center. 0-100
+    fontSize: 7, // optional: font size
+    color: [180, 180, 180], // optional: RGB color for fixed category color
+    default: true, // optional: if set, category will be selected on initial load
+    fixed: true, // optional: if set, will always display on graph
+    // list - required: array. the list of elements for the category
+    list: [
+      // Event object:
+      {
+        name: "event display name", // required
+        start: "10 Oct 1999", // required (any string that new Date can parse)
+        end: "05 Dec 2010", // optional end date if range is required
+        rank: 3, // optional rank 1-10 (defines relative opacity of events in category)
+      },
+    ],
+  },
+};
+```
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
